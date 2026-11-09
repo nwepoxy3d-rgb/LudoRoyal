@@ -1,0 +1,12 @@
+{
+  "name": "Ludo Royal",
+  "short_name": "Ludo Royal",
+  "description": "Jeu de Ludo à quatre joueurs, jouable hors ligne.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080e1b",
+  "theme_color": "#0a1020",
+  "icons": [{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
