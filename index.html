@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1020">
+<meta name="description" content="Ludo Royal — jeu de Ludo local à quatre joueurs, jouable hors ligne.">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Ludo Royal</title>
+<style>
+:root{--bg:#080e1b;--panel:#121d31;--gold:#edc77b;--red:#ed526b;--green:#24b985;--yellow:#e8aa36;--blue:#448fe0;--ink:#17243a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% 38%,#1a2b48 0,#101a2d 42%,#070b14 100%);color:#f5f7fc;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
+body{min-height:100dvh}
+#app{min-height:100dvh;max-width:1000px;margin:auto;padding:max(10px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px}
+header{width:100%;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}.crown{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:linear-gradient(145deg,#ffe7b1,#b77b2d);color:#321f09;font-size:22px;box-shadow:0 5px 18px #d6a24d50,inset 0 1px 2px #fff}
+.brand strong{font-size:15px;font-weight:950;letter-spacing:.16em}.brand small{display:block;color:#8e9bb2;font-size:9px;font-weight:800;letter-spacing:.2em;margin-top:3px}
+.head-actions{display:flex;gap:7px}.icon{width:38px;height:38px;border:1px solid #ffffff19;border-radius:12px;background:linear-gradient(145deg,#1b2a44,#0d1729);color:#eaf0fa;font-size:18px;box-shadow:0 5px 15px #0005}
+.players{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.player{--c:#fff;display:flex;align-items:center;gap:7px;min-width:0;padding:8px 9px;border:1px solid #ffffff14;border-radius:13px;background:linear-gradient(145deg,#1a2943e8,#101a2ce8);opacity:.72;transition:.2s}
+.player.active{opacity:1;border-color:color-mix(in srgb,var(--c),white 35%);box-shadow:0 0 0 1px color-mix(in srgb,var(--c),transparent 65%),0 0 18px color-mix(in srgb,var(--c),transparent 82%);transform:translateY(-1px)}
+.pdot{width:11px;height:11px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}.pname{font-size:10px;font-weight:950;letter-spacing:.08em;white-space:nowrap}.pcount{font-size:9px;color:#9eabc0;margin-top:2px}
+main{width:100%;flex:1;min-height:0;display:grid;place-items:center}
+.board-wrap{width:min(94vw, min(65dvh, 660px));aspect-ratio:1;position:relative;filter:drop-shadow(0 22px 25px #0009)}
+.frame{position:absolute;inset:0;padding:7px;border-radius:23px;background:linear-gradient(145deg,#ffe5a3,#94682b 27%,#f4d28a 52%,#69471c);box-shadow:inset 0 2px 2px #fff9,inset 0 -5px 10px #3c260d,0 0 0 1px #ffe6a355}
+#board{display:block;width:100%;height:100%;border-radius:16px;background:linear-gradient(145deg,#eaf0f7,#b8c5d5);box-shadow:inset 0 0 0 2px #263750}
+#board .path{fill:url(#tile);stroke:#8392a5;stroke-width:1.2}.yard-label{font-size:12px;font-weight:900;letter-spacing:2px;fill:#29364a;opacity:.62}
+.pawn{cursor:pointer;touch-action:manipulation;filter:drop-shadow(0 3px 2px #0007)}.pawn .token-base{stroke:#ffffff9c;stroke-width:1}.pawn.selectable{filter:drop-shadow(0 0 7px currentColor) drop-shadow(0 4px 2px #0008);animation:glow .7s ease-in-out infinite alternate}
+@keyframes glow{to{opacity:.75;transform:translate(var(--tx),var(--ty)) scale(1.12)}}
+.pawn.carried{filter:drop-shadow(0 0 12px #fff) drop-shadow(0 8px 4px #0008)}
+.pawn.captured{filter:drop-shadow(0 0 10px #fff) drop-shadow(0 6px 3px #0008)}
+#grabRing{fill:none;stroke:#c9f2ff;stroke-width:4;filter:drop-shadow(0 0 7px #5ccfff);opacity:0}
+#grabRing.active{opacity:1;animation:ringPulse .5s ease-in-out infinite alternate}
+@keyframes ringPulse{to{stroke-width:8;opacity:.45}}
+.dice-shadow{position:absolute;left:50%;top:50%;width:33px;height:10px;border-radius:50%;background:radial-gradient(ellipse,#030713c9 0,#03071370 50%,transparent 78%);filter:blur(2px);transform:translate(-50%,45%);z-index:19;pointer-events:none}
+.dice-pad{position:absolute;left:50%;top:50%;width:48px;height:48px;border-radius:50%;transform:translate(-50%,-50%);z-index:18;pointer-events:none;background:radial-gradient(circle at 35% 25%,#4b607c,#17263f 66%,#0b1425);border:1px solid #dfbd79a6;box-shadow:inset 0 2px 4px #fff4,inset 0 -5px 8px #0009,0 4px 7px #0008}
+.dice-pad:after{content:"";position:absolute;inset:4px;border:1px solid #f8dda05c;border-radius:50%}
+.dice{--s:clamp(30px,8vw,42px);position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);perspective:260px;transform:translate(-50%,-50%);z-index:21;cursor:pointer;touch-action:manipulation;filter:drop-shadow(0 3px 2px #0008)}
+.dice-view{position:absolute;inset:0;transform-style:preserve-3d}
+.cube{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.cube.rolling{transition:none}
+.face{position:absolute;inset:0;border-radius:23%;background:linear-gradient(145deg,#fff,#eef2f8 55%,#c6d0dd);border:1px solid #a9b6c7;box-shadow:inset 0 2px 4px #fff,inset 0 -2px 4px #8999ad;backface-visibility:hidden}
+.front{transform:translateZ(calc(var(--s)/2))}.back{transform:rotateY(180deg) translateZ(calc(var(--s)/2))}.right{transform:rotateY(90deg) translateZ(calc(var(--s)/2))}.left{transform:rotateY(-90deg) translateZ(calc(var(--s)/2))}.top{transform:rotateX(90deg) translateZ(calc(var(--s)/2))}.bottom{transform:rotateX(-90deg) translateZ(calc(var(--s)/2))}
+.pip{position:absolute;width:18%;height:18%;border-radius:50%;background:#18263c;transform:translate(-50%,-50%);box-shadow:inset 0 1px 2px #0008,0 1px 1px #fff}
+.face[data-value="1"] .pip{background:#e44860}
+.dice-caption{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);font-size:7px;font-weight:950;letter-spacing:.1em;color:#fff;text-shadow:0 1px 3px #000;white-space:nowrap;pointer-events:none}
+.controls{width:100%;display:flex;align-items:stretch;gap:9px}
+.turn-panel{flex:1;min-width:0;border:1px solid #ffffff18;border-radius:15px;padding:10px 12px;background:linear-gradient(145deg,#1b2a44ee,#0e182aee);box-shadow:0 8px 20px #0004}
+.kicker{color:#95a5bf;font-size:8px;font-weight:900;letter-spacing:.2em}.message{margin-top:4px;font-weight:900;font-size:clamp(12px,3vw,15px)}.hint{margin-top:3px;color:#aab7ca;font-size:10px;line-height:1.35}
+.roll{min-width:118px;border:0;border-radius:15px;padding:10px 14px;background:linear-gradient(145deg,#ffe5ab,#dfa440 60%,#a96d20);box-shadow:0 5px 0 #704614,0 9px 20px #b67b2e35,inset 0 1px 2px #fff;color:#2d1c08;font-size:11px;font-weight:1000;letter-spacing:.08em}
+.roll:disabled{opacity:.45;filter:grayscale(.5)}
+footer{font-size:8px;letter-spacing:.1em;color:#7d8ba4;display:flex;gap:9px;align-items:center;padding-bottom:2px}.online-dot{width:5px;height:5px;border-radius:50%;background:#41d5a1;box-shadow:0 0 7px #41d5a1}
+.modal{position:fixed;inset:0;z-index:50;display:none;place-items:center;padding:20px;background:#030713c9;backdrop-filter:blur(12px)}.modal.show{display:grid}.card{width:min(100%,380px);padding:22px;border:1px solid #ffffff22;border-radius:22px;background:linear-gradient(145deg,#20304d,#111b2f);box-shadow:0 25px 65px #000a;text-align:center}.card h2{margin:8px 0;font-size:21px}.card p{color:#adbbcf;font-size:12px;line-height:1.6}.card button{margin:5px;padding:12px 17px;border:0;border-radius:12px;background:linear-gradient(145deg,#ffe5ab,#dba13b);color:#2b1a07;font-weight:900}
+#flash{position:absolute;inset:0;z-index:30;pointer-events:none;background:white;opacity:0}.flash{animation:flash .22s ease-out}@keyframes flash{0%{opacity:.7}100%{opacity:0}}
+@media(max-width:430px){#app{padding-left:8px;padding-right:8px;gap:7px}.crown{width:35px;height:35px}.brand strong{font-size:13px}.player{padding:6px 5px;gap:5px}.pdot{width:9px;height:9px}.pname{font-size:8px}.pcount{font-size:8px}.board-wrap{width:min(96vw,61dvh)}.frame{padding:5px;border-radius:18px}.roll{min-width:104px;padding:10px 9px;font-size:10px}.turn-panel{padding:8px 9px}.hint{font-size:9px}}
+@media(max-height:690px){#app{gap:5px;padding-top:5px;padding-bottom:5px}.board-wrap{width:min(84vw,54dvh)}.crown{width:31px;height:31px}.player{padding:5px}.turn-panel{padding:7px 9px}.roll{padding:8px 10px}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+ <div class="brand"><div class="crown">♛</div><div><strong>LUDO ROYAL</strong><small>CLASSIC • FOUR PLAYERS</small></div></div>
+ <div class="head-actions"><button class="icon" id="rules" aria-label="Règles">ⓘ</button><button class="icon" id="restart" aria-label="Recommencer">↻</button></div>
+</header>
+<section class="players">
+ <div class="player active" data-color="RED" style="--c:var(--red)"><i class="pdot"></i><div><div class="pname">ROUGE</div><div class="pcount" id="count-RED">0 / 4</div></div></div>
+ <div class="player" data-color="GREEN" style="--c:var(--green)"><i class="pdot"></i><div><div class="pname">VERT</div><div class="pcount" id="count-GREEN">0 / 4</div></div></div>
+ <div class="player" data-color="YELLOW" style="--c:var(--yellow)"><i class="pdot"></i><div><div class="pname">JAUNE</div><div class="pcount" id="count-YELLOW">0 / 4</div></div></div>
+ <div class="player" data-color="BLUE" style="--c:var(--blue)"><i class="pdot"></i><div><div class="pname">BLEU</div><div class="pcount" id="count-BLUE">0 / 4</div></div></div>
+</section>
+<main>
+ <div class="board-wrap" id="boardWrap">
+  <div class="frame">
+   <svg id="board" viewBox="0 0 600 600" role="img" aria-label="Plateau de Ludo à quatre couleurs">
+    <defs>
+     <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".65" stop-color="#e8eef5"/><stop offset="1" stop-color="#cbd6e3"/></linearGradient>
+     <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff9aa8"/><stop offset="1" stop-color="#b52343"/></linearGradient>
+     <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8cf2c8"/><stop offset="1" stop-color="#13734f"/></linearGradient>
+     <linearGradient id="yellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe69b"/><stop offset="1" stop-color="#a96f16"/></linearGradient>
+     <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9bd5ff"/><stop offset="1" stop-color="#15548f"/></linearGradient>
+     <linearGradient id="tokenRed" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb5bf"/><stop offset=".45" stop-color="#f0526d"/><stop offset="1" stop-color="#8e1732"/></linearGradient>
+     <linearGradient id="tokenGreen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9ffe0"/><stop offset=".45" stop-color="#26bd87"/><stop offset="1" stop-color="#096242"/></linearGradient>
+     <linearGradient id="tokenYellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0b5"/><stop offset=".45" stop-color="#eab23c"/><stop offset="1" stop-color="#945d0c"/></linearGradient>
+     <linearGradient id="tokenBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c1e8ff"/><stop offset=".45" stop-color="#438fdf"/><stop offset="1" stop-color="#144b89"/></linearGradient>
+     <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="3"/></filter>
+    </defs>
+    <rect x="4" y="4" width="592" height="592" rx="16" fill="#aab8ca"/>
+    <g id="yards"></g><g id="tiles"></g><g id="center"></g>
+    <g id="effects"><circle id="grabRing" r="22"/><path id="grabBeam" d="" fill="#c9f2ff" opacity="0"/></g>
+    <g id="pawns"></g>
+   </svg>
+   <div class="dice-pad" id="dicePad"></div><div class="dice-shadow" id="diceShadow"></div>
+   <div class="dice" id="dice" role="button" tabindex="0" aria-label="Lancer le dé">
+    <div class="dice-view"><div class="cube" id="cube">
+     <div class="face front" data-value="1"></div><div class="face back" data-value="6"></div><div class="face right" data-value="3"></div><div class="face left" data-value="4"></div><div class="face top" data-value="2"></div><div class="face bottom" data-value="5"></div>
+    </div></div><div class="dice-caption" id="diceCaption">À VOUS</div>
+   </div>
+   <div id="flash"></div>
+  </div>
+ </div>
+</main>
+<section class="controls">
+ <div class="turn-panel"><div class="kicker">TOUR EN COURS</div><div class="message" id="message">ROUGE, lance le dé</div><div class="hint" id="hint">Un 6 pour sortir un pion de la maison.</div></div>
+ <button class="roll" id="roll">🎲 LANCER</button>
+</section>
+<footer><span class="online-dot"></span> 4 JOUEURS LOCAUX <span>•</span> RÈGLES CLASSIQUES <span>•</span> HORS LIGNE</footer>
+</div>
+<div class="modal" id="modal"><div class="card"><div style="font-size:34px" id="modalIcon">♛</div><h2 id="modalTitle"></h2><p id="modalText"></p><button id="modalOk">Compris</button></div></div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const ORDER=['RED','GREEN','YELLOW','BLUE'];
+const C={
+ RED:{name:'ROUGE',hex:'#ed526b',grad:'tokenRed',start:0,home:[[100,100],[160,100],[100,160],[160,160]],lane:[[1,7],[2,7],[3,7],[4,7],[5,7]],station:[258,226]},
+ GREEN:{name:'VERT',hex:'#24b985',grad:'tokenGreen',start:13,home:[[440,100],[500,100],[440,160],[500,160]],lane:[[7,1],[7,2],[7,3],[7,4],[7,5]],station:[342,226]},
+ YELLOW:{name:'JAUNE',hex:'#e8aa36',grad:'tokenYellow',start:26,home:[[440,440],[500,440],[440,500],[500,500]],lane:[[13,7],[12,7],[11,7],[10,7],[9,7]],station:[342,374]},
+ BLUE:{name:'BLEU',hex:'#448fe0',grad:'tokenBlue',start:39,home:[[100,440],[160,440],[100,500],[160,500]],lane:[[7,13],[7,12],[7,11],[7,10],[7,9]],station:[258,374]}
+};
+const TRACK=[[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[14,7],[14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14],[6,14],[6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],[0,7]];
+const SAFE=new Set([0,8,13,21,26,34,39,47]), pawns={};
+let current='RED',turn=0,diceValue=null,busy=false,selecting=false,choices=[],gameOver=false,forced=null;
+const xy=(x,y)=>[x*40+20,y*40+20], percent=(v)=>v/600*100, center=[300,300];
+function svg(tag,attrs,parent){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in attrs)n.setAttribute(k,attrs[k]);parent.appendChild(n);return n;}
+function drawBoard(){
+ const yards=$('yards'),tiles=$('tiles'),ctr=$('center');
+ const configs=[['RED',12,12],['GREEN',348,12],['YELLOW',348,348],['BLUE',12,348]];
+ for(const [col,x,y] of configs){
+  svg('rect',{x,y,width:240,height:240,rx:16,fill:'url(#'+col.toLowerCase()+')',stroke:'#ffffffa0','stroke-width':2},yards);
+  svg('rect',{x:x+32,y:y+32,width:176,height:176,rx:13,fill:'#f3f6fa',stroke:'#ffffffcc','stroke-width':3},yards);
+  svg('text',{x:x+120,y:y+26,'text-anchor':'middle',class:'yard-label'},yards).textContent=C[col].name;
+  C[col].home.forEach(([hx,hy])=>{svg('circle',{cx:hx,cy:hy,r:17,fill:'#d9e1eb',stroke:'#8392a5','stroke-width':1.5},yards);svg('circle',{cx:hx-4,cy:hy-4,r:6,fill:'#ffffff99'},yards);});
+ }
+ const trackMap=new Map(TRACK.map((p,i)=>[p.join(','),i]));
+ const lanes=new Map();ORDER.forEach(c=>C[c].lane.forEach((p,i)=>lanes.set(p.join(','),c)));
+ for(let y=0;y<15;y++)for(let x=0;x<15;x++){
+  const key=x+','+y,idx=trackMap.get(key),lane=lanes.get(key);
+  if(idx!==undefined||lane){
+   const [cx,cy]=xy(x,y);let fill='url(#tile)';
+   if(lane)fill='url(#'+lane.toLowerCase()+')';
+   if([0,13,26,39].includes(idx))fill='url(#'+ORDER.find(c=>C[c].start===idx).toLowerCase()+')';
+   svg('rect',{x:cx-18,y:cy-18,width:36,height:36,rx:5,class:'path',fill,stroke:'#8392a5'},tiles);
+   if(SAFE.has(idx)){svg('text',{x:cx,y:cy+6,'text-anchor':'middle','font-size':18,fill:'#8b9ab0'},tiles).textContent='✦';}
+  }
+ }
+ const lanesData=[['RED',[[1,7],[2,7],[3,7],[4,7],[5,7]]],['GREEN',[[7,1],[7,2],[7,3],[7,4],[7,5]]],['YELLOW',[[13,7],[12,7],[11,7],[10,7],[9,7]]],['BLUE',[[7,13],[7,12],[7,11],[7,10],[7,9]]]];
+ lanesData.forEach(([c,arr])=>arr.forEach(([x,y])=>{const [cx,cy]=xy(x,y);svg('rect',{x:cx-18,y:cy-18,width:36,height:36,rx:5,fill:'url(#'+c.toLowerCase()+')',stroke:'#7d8ba0'},tiles);}));
+ // Centre en quatre triangles colorés et petit médaillon.
+ const paths=[['RED','300,240 300,300 240,300'],['GREEN','300,240 360,300 300,300'],['YELLOW','360,300 300,360 300,300'],['BLUE','300,360 240,300 300,300']];
+ paths.forEach(([c,points])=>svg('polygon',{points,fill:'url(#'+c.toLowerCase()+')',stroke:'#ffffff','stroke-width':1.5},ctr));
+ svg('circle',{cx:300,cy:300,r:15,fill:'#f5d797',stroke:'#9c6c28','stroke-width':2},ctr);
+ svg('text',{x:300,y:305,'text-anchor':'middle','font-size':13,fill:'#503513','font-weight':900},ctr).textContent='♛';
+}
+function pawnPos(p,progress=p.progress){
+ if(progress===-1)return p.home;
+ if(progress<=51)return xy(...TRACK[(C[p.color].start+progress)%52]);
+ if(progress<=56)return xy(...C[p.color].lane[progress-52]);
+ return center;
+}
+function makePawn(color,i){
+ const g=svg('g',{class:'pawn',tabindex:0,role:'button','aria-label':C[color].name+' pion '+(i+1)},$('pawns'));
+ g.style.color=C[color].hex;
+ svg('ellipse',{cx:0,cy:13,rx:14,ry:5,fill:'#07101d66',filter:'url(#shadow)'},g);
+ svg('path',{d:'M-13 7 Q-13 2 -8 -1 L-5 -12 Q-4 -17 0 -17 Q4 -17 5 -12 L8 -1 Q13 2 13 7 Q13 12 0 13 Q-13 12 -13 7Z',fill:'url(#'+C[color].grad+')',stroke:'#ffffffa8','stroke-width':1.2,class:'token-base'},g);
+ svg('ellipse',{cx:-4,cy:-10,rx:3,ry:5,fill:'#ffffff70'},g);
+ svg('circle',{cx:0,cy:-19,r:8.5,fill:'url(#'+C[color].grad+')',stroke:'#ffffffb0','stroke-width':1},g);
+ svg('ellipse',{cx:-2.5,cy:-22,rx:2.8,ry:2,fill:'#ffffffa0'},g);
+ const p={color,id:i,progress:-1,node:g,home:C[color].home[i]};
+ g.addEventListener('click',()=>tapPawn(p));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tapPawn(p);}});
+ return p;
+}
+function renderPawns(){
+ const all=ORDER.flatMap(c=>pawns[c]);const grouped=new Map();
+ all.forEach(p=>{const q=pawnPos(p),key=q.join(',');if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(p);});
+ for(const group of grouped.values())group.forEach((p,i)=>{const q=pawnPos(p),offsets=[[0,0],[-10,-8],[10,8],[-10,8],[10,-8]],o=group.length>1?offsets[i]||[0,0]:[0,0];p.node.setAttribute('transform','translate('+(q[0]+o[0])+','+(q[1]+o[1])+')');p.node.classList.toggle('selectable',choices.includes(p));});
+ ORDER.forEach(c=>{$('count-'+c).textContent=pawns[c].filter(p=>p.progress===57).length+' / 4';});
+}
+function setStatus(a,b){$('message').textContent=a;$('hint').textContent=b||'';}
+function setDieAt(x,y,lift=0){
+ $('dice').style.left=percent(x)+'%';$('dice').style.top=percent(y-lift)+'%';
+ $('diceShadow').style.left=percent(x)+'%';$('diceShadow').style.top=percent(y+12)+'%';
+ $('diceShadow').style.transform='translate(-50%,45%) scale('+(Math.max(.55,1-lift/70))+')';$('diceShadow').style.opacity=String(Math.max(.3,1-lift/55));
+}
+function setDieRot(x,y,z){$('cube').style.transform='rotateX('+x+'deg) rotateY('+y+'deg) rotateZ('+z+'deg)';}
+const FINAL={1:[0,0,0],2:[-90,0,0],3:[0,-90,0],4:[0,90,0],5:[90,0,0],6:[0,180,0]};
+function pips(){
+ const pts={1:[[1,1]],2:[[0,0],[2,2]],3:[[0,0],[1,1],[2,2]],4:[[0,0],[2,0],[0,2],[2,2]],5:[[0,0],[2,0],[1,1],[0,2],[2,2]],6:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]]};
+ document.querySelectorAll('.face').forEach(f=>{pts[Number(f.dataset.value)].forEach(([x,y])=>{const d=document.createElement('i');d.className='pip';d.style.left=(x*34+16)+'%';d.style.top=(y*34+16)+'%';f.appendChild(d);});});
+}
+function playerStation(c){return C[c].station;}
+function setStation(c){const q=playerStation(c);$('dicePad').style.left=percent(q[0])+'%';$('dicePad').style.top=percent(q[1])+'%';setDieAt(q[0],q[1]);setDieRot(...FINAL[1]);}
+function animateDie(x,y,duration=850){
+ const fromX=parseFloat($('dice').style.left||'50')*6,fromY=parseFloat($('dice').style.top||'50')*6,start=performance.now();$('cube').classList.add('rolling');
+ return new Promise(resolve=>{function frame(now){const t=Math.min(1,(now-start)/duration),e=1-Math.pow(1-t,3),arc=Math.sin(t*Math.PI*4)*Math.pow(1-t,1.3)*23;
+ setDieAt(fromX+(x-fromX)*e,fromY+(y-fromY)*e,Math.max(0,arc));
+ const s=(1-t)*720;setDieRot(s+1440*t,s*1.2+1080*t,s*.8+720*t);
+ if(t<1)requestAnimationFrame(frame);else{$('cube').classList.remove('rolling');resolve();}}
+ requestAnimationFrame(frame);});
+}
+function setFace(n){setDieRot(...FINAL[n]);$('diceCaption').textContent='RÉSULTAT '+n;}
+function safeCell(p){const i=trackIndex(p);return i>=0&&SAFE.has(i);}
+function trackIndex(p){if(p.progress<0||p.progress>51)return -1;return(C[p.color].start+p.progress)%52;}
+function canMove(p,n){if(p.progress===57)return false;if(p.progress===-1)return n===6;return p.progress+n<=57;}
+async function roll(){
+ if(busy||diceValue!==null||selecting||gameOver)return;
+ busy=true;$('roll').disabled=true;$('diceCaption').textContent='LANCEMENT';
+ const n=forced??(1+Math.floor(Math.random()*6));forced=null;
+ await animateDie(300+(Math.random()*24-12),300+(Math.random()*24-12),1050);
+ setFace(n);diceValue=n;busy=false;setStatus(C[current].name+' a obtenu '+n,'Le dé s’est arrêté sur le plateau.');
+ await sleep(220);afterRoll();
+}
+function afterRoll(){
+ choices=pawns[current].filter(p=>canMove(p,diceValue));
+ if(!choices.length){setStatus('Aucun coup possible','Le tour passe au joueur suivant.');setTimeout(()=>finishTurn(false),950);return;}
+ if(choices.length===1){setStatus('Un seul pion peut jouer','Déplacement automatique.');setTimeout(()=>{if(!busy)movePawn(choices[0]);},330);return;}
+ selecting=true;renderPawns();setStatus('Choisis un pion',choices.length+' pions sont disponibles. Touche un pion lumineux.');
+}
+function tapPawn(p){if(!selecting||busy||p.color!==current||!choices.includes(p))return;selecting=false;choices=[];renderPawns();movePawn(p);}
+async function movePawn(p){
+ if(busy||diceValue===null)return;busy=true;$('roll').disabled=true;selecting=false;choices=[];renderPawns();
+ const rollValue=diceValue;setStatus('Le pion avance…','Chaque case est animée.');
+ if(p.progress===-1){await grabPawn(p);}else{
+  for(let i=0;i<rollValue;i++){p.progress++;await hopPawn(p,pawnPos(p));}
+ }
+ const won=p.progress===57;renderPawns();if(won)setStatus('Pion arrivé au centre !','Le pion est à l’abri.');
+ const captured=await captureAt(p);
+ if(pawns[current].every(q=>q.progress===57)){gameOver=true;showModal('🏆',C[current].name+' GAGNE !','Les quatre pions sont arrivés au centre.');return;}
+ busy=false;await finishTurn(captured);
+}
+async function hopPawn(p,q){
+ const from=p.node.getAttribute('transform');const start=pawnPos(p,p.progress-1);const a=start,b=q,begin=performance.now(),duration=150;
+ await new Promise(resolve=>{function frame(now){const t=Math.min(1,(now-begin)/duration),e=1-Math.pow(1-t,3),lift=Math.sin(t*Math.PI)*13,x=a[0]+(b[0]-a[0])*e,y=a[1]+(b[1]-a[1])*e; p.node.setAttribute('transform','translate('+x+','+(y-lift)+')');if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});
+ p.node.setAttribute('transform','translate('+q[0]+','+q[1]+')');await sleep(25);
+}
+function setPawnTransform(p,x,y,angle=0,lift=0){p.node.setAttribute('transform','translate('+x+','+(y-lift)+') rotate('+angle+')');}
+async function grabPawn(p){
+ const from=p.home.slice(),dest=xy(...TRACK[C[p.color].start]);
+ await animateDie(from[0],from[1]-27,500);
+ const ring=$('grabRing'),beam=$('grabBeam');ring.setAttribute('cx',from[0]);ring.setAttribute('cy',from[1]);ring.setAttribute('r',20);ring.classList.add('active');
+ beam.setAttribute('d','M'+from[0]+' '+(from[1]-12)+' L'+(from[0]-10)+' '+(from[1]-52)+' L'+(from[0]+10)+' '+(from[1]-52)+' Z');beam.setAttribute('opacity','.8');
+ p.node.classList.add('carried');await sleep(240);
+ const start=performance.now(),duration=950;
+ $('cube').classList.add('rolling');
+ await new Promise(resolve=>{function frame(now){const t=Math.min(1,(now-start)/duration),e=1-Math.pow(1-t,3),arc=Math.sin(t*Math.PI)*22,x=from[0]+(dest[0]-from[0])*e,y=from[1]+(dest[1]-from[1])*e;setPawnTransform(p,x,y,360*t,arc+12);setDieAt(x,y-26,arc+4);ring.setAttribute('cx',x);ring.setAttribute('cy',y);beam.setAttribute('d','M'+x+' '+(y-10)+' L'+(x-9)+' '+(y-45)+' L'+(x+9)+' '+(y-45)+' Z');setDieRot(20+720*t,15+900*t,360*t);if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});
+ $('cube').classList.remove('rolling');p.progress=0;p.node.classList.remove('carried');p.node.setAttribute('transform','translate('+dest[0]+','+dest[1]+')');ring.classList.remove('active');beam.setAttribute('opacity','0');setFace(6);await animateDie(...playerStation(p.color),360);renderPawns();
+}
+async function captureAt(attacker){
+ const idx=trackIndex(attacker);if(idx<0||SAFE.has(idx))return false;const victims=[];
+ ORDER.forEach(c=>{if(c!==attacker.color)pawns[c].forEach(p=>{if(trackIndex(p)===idx)victims.push(p);});});
+ if(!victims.length)return false;
+ for(const v of victims){
+  setStatus('TACLE DU DÉ !','Le pion adverse retourne à sa maison.');
+  const pos=pawnPos(v);await animateDie(pos[0],pos[1]-26,330);$('flash').classList.remove('flash');void $('flash').offsetWidth;$('flash').classList.add('flash');
+  v.node.classList.add('captured');const begin=performance.now(),home=v.home,duration=640;
+  await new Promise(resolve=>{function frame(now){const t=Math.min(1,(now-begin)/duration),e=1-Math.pow(1-t,2),x=pos[0]+(home[0]-pos[0])*e,y=pos[1]+(home[1]-pos[1])*e;setPawnTransform(v,x,y,1100*t,Math.sin(t*Math.PI)*55);if(t<1)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);});
+  v.progress=-1;v.node.classList.remove('captured');v.node.setAttribute('transform','translate('+home[0]+','+home[1]+')');await sleep(80);
+ }
+ renderPawns();await animateDie(...playerStation(attacker.color),330);if(diceValue!==null)setFace(diceValue);return true;
+}
+async function finishTurn(captured){
+ const rolled=diceValue;diceValue=null;choices=[];selecting=false;renderPawns();
+ if(rolled===6||captured){busy=true;setStatus(captured?'Capture !':'Un 6 !',C[current].name+' rejoue.');await sleep(250);await animateDie(...playerStation(current),350);busy=false;updateTurn();}
+ else await nextTurn();
+}
+async function nextTurn(){busy=true;turn=(turn+1)%4;current=ORDER[turn];await animateDie(...playerStation(current),390);busy=false;updateTurn();}
+function updateTurn(){
+ document.querySelectorAll('.player').forEach(n=>n.classList.toggle('active',n.dataset.color===current));
+ $('diceCaption').textContent='À VOUS';$('dice').style.pointerEvents='auto';$('roll').disabled=false;$('cube').classList.remove('rolling');setDieRot(...FINAL[1]);setStatus(C[current].name+', lance le dé','Il faut un 6 pour sortir un pion de la maison.');
+ const q=playerStation(current);$('dicePad').style.left=percent(q[0])+'%';$('dicePad').style.top=percent(q[1])+'%';
+}
+function showModal(icon,title,text){$('modalIcon').textContent=icon;$('modalTitle').textContent=title;$('modalText').textContent=text;$('modal').classList.add('show');}
+function reset(){for(const c of ORDER)for(const p of pawns[c]){p.progress=-1;p.node.classList.remove('selectable','carried','captured');}current='RED';turn=0;diceValue=null;busy=false;selecting=false;choices=[];gameOver=false;renderPawns();setDieAt(...playerStation(current));updateTurn();}
+function drawPawns(){ORDER.forEach(c=>{pawns[c]=[];for(let i=0;i<4;i++){const p=makePawn(c,i);pawns[c].push(p);}});renderPawns();}
+function start(){
+ drawBoard();drawPawns();pips();setDieAt(...playerStation(current));$('dicePad').style.left=percent(playerStation(current)[0])+'%';$('dicePad').style.top=percent(playerStation(current)[1])+'%';updateTurn();
+ $('roll').addEventListener('click',roll);$('dice').addEventListener('click',roll);$('dice').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();roll();}});
+ $('restart').addEventListener('click',()=>showModal('↻','RECOMMENCER ?','Relancer une nouvelle partie remet les 16 pions dans leurs maisons.'));$('modalOk').addEventListener('click',()=>{$('modal').classList.remove('show');if($('modalTitle').textContent==='RECOMMENCER ?')reset();});
+ $('rules').addEventListener('click',()=>showModal('📜','RÈGLES DU LUDO','Chaque joueur possède quatre pions. Un 6 permet de sortir un pion. Un 6 ou une capture donne un tour supplémentaire. Les cases étoilées sont protégées. Pour gagner, il faut atteindre le centre avec le nombre exact.'));
+}
+window.LudoRoyal={reset,roll,forceNextRoll:n=>{if(Number.isInteger(n)&&n>=1&&n<=6)forced=n;},state:()=>({current,diceValue,busy,progress:Object.fromEntries(ORDER.map(c=>[c,pawns[c].map(p=>p.progress)]))})};
+start();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
